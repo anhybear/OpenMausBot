@@ -301,7 +301,7 @@ function sessionOperationKey(toolCall: any): string | null {
 export function versionFromProbe(stdout: string | undefined, stderr: string | undefined): string | null {
   const out = (stdout ?? "").trim();
   if (out) return out;
-  const err = (stderr ?? "").trim().split("\n")[0]?.trim() ?? "";
+  const err = (stderr ?? "").trim().split(/\r\n|\n|\r/, 1)[0]?.trim() ?? "";
   return err || null;
 }
 

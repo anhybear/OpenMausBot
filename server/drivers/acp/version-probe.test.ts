@@ -12,6 +12,11 @@ describe("versionFromProbe", () => {
     expect(versionFromProbe("", banner)).toBe("Hermes Agent v0.19.1 (2026.7.30) · upstream 0b48ae8d");
   });
 
+  it("takes only the first line whatever the line ending", () => {
+    expect(versionFromProbe("", "v1.2.3\r\nInstall directory: /x\r\n")).toBe("v1.2.3");
+    expect(versionFromProbe("", "v1.2.3\rInstall directory: /x")).toBe("v1.2.3");
+  });
+
   it("is null when both streams are empty", () => {
     expect(versionFromProbe("", "")).toBeNull();
     expect(versionFromProbe(undefined, undefined)).toBeNull();
