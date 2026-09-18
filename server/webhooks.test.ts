@@ -145,6 +145,16 @@ describe("WebhookManager", () => {
     expect(h.posted).toHaveLength(1);
   });
 
+  it("rejects a post delivery instead of running a task when the server has no post sink", () => {
+    const h = harness();
+    const { webhook, secret } = h.manager.create({ name: "Brief", prompt: "", botId: "maus-1", delivery: "post" });
+    const without = new WebhookManager({ ...h.options, post: undefined });
+    expect(() => without.receive(webhook.endpointId, secret, { payload: { text: "hello" }, deliveryId: "evt-post-2" }))
+      .toThrow("cannot post");
+    expect(h.queued).toHaveLength(0);
+    expect(h.posted).toHaveLength(0);
+  });
+
   it("uses an authenticated task from the payload when default instructions are empty", () => {
     const h = harness();
     const { webhook, secret } = h.manager.create({ name: "Direct tasks", prompt: "", botId: "maus-1" });

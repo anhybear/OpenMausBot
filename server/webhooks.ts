@@ -486,7 +486,10 @@ export class WebhookManager {
     // delivery:"post": the payload text becomes the bot's own chat message — no task,
     // no model turn. For notification-style webhooks (a scheduled brief, an alert)
     // that should read like the bot said it. Dedup/rate/attempt bookkeeping is shared.
-    if (trigger.delivery === "post" && this.options.post) {
+    if (trigger.delivery === "post") {
+      // Never fall through to a task run: a stored post webhook on a server
+      // without a post sink is a configuration error, not a run request.
+      if (!this.options.post) fail(503, "This server cannot post webhook messages to chat");
       const raw = event.payload as { text?: unknown } | null;
       const text =
         raw && typeof raw === "object" && typeof raw.text === "string" && raw.text.trim() ? raw.text : serializePayload(event.payload);
