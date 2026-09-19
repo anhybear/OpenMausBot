@@ -615,7 +615,8 @@ mapping the bot's id to a secret of at least 32 characters:
 
 ```sh
 umask 077
-printf '{ "%s": "%s" }\n' "$BOT_ID" "$(openssl rand -hex 32)" > ~/.openmausbot/external-runtimes.json
+TOKEN=$(openssl rand -hex 32)
+printf '{ "%s": "%s" }\n' "$BOT_ID" "$TOKEN" > ~/.openmausbot/external-runtimes.json
 ```
 
 The file must be mode `600`; a file other users can read is ignored with a
@@ -628,8 +629,10 @@ OMB_HARNESS_URL=http://127.0.0.1:8799 OMB_BOT_ID=$BOT_ID OMB_COMMS_TOKEN=$TOKEN 
 ```
 
 Scope is deliberately narrow: the token is an *agents* capability for that
-bot's main thread only — list, ask and delegate to its peers, depth 0, no skill
-authoring, no room coordination, no bot, room or thread creation. Delegations
+bot's main thread only, and the server accepts just four calls with it — list
+peers, ask, delegate, and read the status of its own delegations. Opening
+threads, creating bots or rooms, skills, memory and every other internal route
+answer 403. Delegations
 it sends are picked up immediately, because there is no turn on this server
 whose end they could wait for. Everything else the server offers still needs
 the owner's session or a per-turn capability.

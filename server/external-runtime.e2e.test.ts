@@ -136,8 +136,19 @@ describe("a bot's external runtime", () => {
       }, { timeout: 15_000 }).toBe(true);
       await expect.poll(async () => (await botState(peer.id)).busy, { timeout: 15_000 }).toBeFalsy();
 
-      // the capability stays scoped: no skill authoring, no room coordination
-      expect((await asRuntime("POST", "/api/internal/coordinate-bots", { message: "all hands" })).status).toBe(403);
+      // the capability is peer comms only: nothing that creates or changes state
+      for (const [method, path, body] of [
+        ["POST", "/api/internal/threads", { fromBotId: runtime.id, fromThreadId: runtime.threadId, title: "Side quest", message: "go" }],
+        ["POST", "/api/internal/create-bot", { fromBotId: runtime.id, name: "Minion" }],
+        ["POST", "/api/internal/create-room", { fromBotId: runtime.id, name: "War room" }],
+        ["POST", "/api/internal/coordinate-bots", { message: "all hands" }],
+        ["POST", "/api/internal/skills/stage", { name: "x" }],
+        ["GET", "/api/internal/memory", undefined],
+      ] as const) {
+        expect((await asRuntime(method, path, body)).status, `${method} ${path}`).toBe(403);
+      }
+      const gateway = await botState(runtime.id);
+      expect(gateway.tasks.length).toBe(1); // no task was opened on the runtime's bot either
     } finally {
       for (const bot of [runtime, peer]) {
         await api("POST", `/api/bots/${bot.id}/interrupt`, {}).catch(() => undefined);

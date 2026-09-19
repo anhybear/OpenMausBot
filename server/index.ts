@@ -788,6 +788,14 @@ function externalRuntimeTokens(): Array<{ botId: string; token: string }> {
     return [];
   }
 }
+/** The standing capability is for peer comms only. Everything that creates or
+ * changes state on this server (threads, bots, rooms, skills, memory, …) needs
+ * a real turn, which an external runtime never has here, so the routes are an
+ * allow-list rather than flags on the capability. */
+function externalRuntimeMayCall(method: string, path: string): boolean {
+  if (method === "GET") return path === "/api/internal/agents" || /^\/api\/internal\/delegations\/[\w-]+$/.test(path);
+  return method === "POST" && (path === "/api/internal/ask-bot" || path === "/api/internal/delegate-bot");
+}
 function externalRuntimeCapability(header: string | string[] | undefined): InternalCapability | null {
   if (Array.isArray(header) || !header) return null;
   const got = Buffer.from(header);
@@ -11061,6 +11069,9 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
       const internalSender = store.bot(internalCapability.botId);
       if (!internalSender) {
         return json(res, 401, { error: "unauthorized" });
+      }
+      if (internalCapability.generation === EXTERNAL_RUNTIME_GENERATION && !externalRuntimeMayCall(method, path)) {
+        return json(res, 403, { error: "an external runtime can only list, ask and delegate to its peers and read its delegations" });
       }
       const requiredCapabilityKind = path === "/api/internal/browser/mcp"
         ? "browser"
